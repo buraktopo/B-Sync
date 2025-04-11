@@ -1,68 +1,117 @@
+const puppeteer = require("puppeteer-core");
 const axios = require("axios");
-const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const Polygon = require("../models/Polygon");
-const WorkArea = require("../models/WorkArea");
+const VehicleSet = require("../models/VehicleSet");
+const connectDB = require("../config/db");
 
-dotenv.config();
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+const DRO_BASE = "https://pdv2.dro.routesmart.com/api/api";
 
-const DRO_BASE_URL = "https://pdv2.dro.routesmart.com/api/api";
-const SERVICE_AREA_ID = "2985394";  // Replace with your actual Service Area ID
-const ROUTE_PLAN_ID = "19092";      // Replace with your actual Route Plan ID
-const DRO_AUTH_TOKEN = process.env.DRO_AUTH_TOKEN;  // Store in .env
+async function fetchPolygonsForAllPlans() {
+  const browser = await puppeteer.launch({
+    headless: false,
+    executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    args: ["--start-maximized"],
+  });
 
-const fetchDROData = async () => {
+  await connectDB();
+
+  const page = await browser.newPage();
+  await page.goto("https://dro.routesmart.com/login");
+
+  await page.waitForSelector("button");
+  const buttons = await page.$$("button");
+  await buttons[0].click();
+
+  console.log("🔐 Please log in manually via the popup...");
+
+  await page.waitForResponse(
+    (res) => res.url().includes("/api/api/service-areas") && res.status() === 200,
+    { timeout: 180000 }
+  );
+
+  const cookies = await page.cookies();
+  const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join("; ");
+
+  const headers = {
+    Cookie: cookieHeader,
+    "User-Agent": "Mozilla/5.0",
+    "Accept": "application/json, text/plain, */*",
+    "Referer": "https://dro.routesmart.com/"
+  };
+
   try {
-    if (!DRO_AUTH_TOKEN) {
-      console.error("❌ Missing DRO_AUTH_TOKEN. Set it in the .env file.");
-      process.exit(1);
+    const serviceAreasRes = await axios.get("https://dro.routesmart.com/api/api/service-areas", { headers });
+    const serviceAreaId = serviceAreasRes.data?.[0]?.serviceAreaId;
+    if (!serviceAreaId) {
+      throw new Error("No serviceAreaId found.");
     }
 
-    console.log("🔄 Fetching DRO data...");
+    const activePlanRes = await axios.get(`https://pdv2.dro.routesmart.com/api/api/service-areas/${serviceAreaId}/active-plan`, { headers });
+    const planIdByDay = {};
+    for (const [day, plan] of Object.entries(activePlanRes.data)) {
+      if (plan?.id) {
+        planIdByDay[day] = plan.id;
+      }
+    }
 
-    // Fetch Work Areas (Advanced Vehicle Set)
-    const workAreaRes = await axios.get(`${DRO_BASE_URL}/service-areas/${SERVICE_AREA_ID}/route-plans/${ROUTE_PLAN_ID}/advanced-vehicle-set`, {
-      headers: { Authorization: `Bearer ${DRO_AUTH_TOKEN}` }
-    });
+    for (const [day, planId] of Object.entries(planIdByDay)) {
+      console.log(`📦 Fetching polygons for ${day} (Plan ID: ${planId})...`);
 
-    const workAreas = workAreaRes.data;
-    console.log(`✅ Retrieved ${workAreas.length} work areas.`);
-
-    // Store Work Areas in MongoDB
-    for (const wa of workAreas) {
-      await WorkArea.updateOne(
-        { workAreaId: wa.id },
-        { $set: { workAreaName: wa.name, driverId: wa.driverId, truckId: wa.truckId } },
-        { upsert: true }
+      const res = await axios.get(
+        `${DRO_BASE}/anchor-areas/${serviceAreaId}/service-area/${planId}/route-plan`,
+        { headers }
       );
-    }
 
-    // Fetch Polygons (Anchor Areas)
-    const polygonRes = await axios.get(`${DRO_BASE_URL}/anchor-areas/${SERVICE_AREA_ID}/service-area/${ROUTE_PLAN_ID}/route-plan`, {
-      headers: { Authorization: `Bearer ${DRO_AUTH_TOKEN}` }
-    });
+      const polygons = res.data;
+      console.log(`🧹 Deleting existing polygons for Service Area ${serviceAreaId}, Day: ${day}`);
+      await Polygon.deleteMany({ serviceAreaId: serviceAreaId, day: day });
+      console.log(`🧹 Cleared existing polygons for ${day}`);
+      let count = 0;
+      for (const poly of polygons) {
+        await Polygon.updateOne(
+          { anchorAreaId: poly.anchorAreaId, day },
+          {
+            $set: {
+              name: poly.name,
+              coordinates: poly.shape?.rings,
+              serviceAreaId: poly.serviceAreaId,
+              day,
+            },
+          },
+          { upsert: true }
+        );
+        count++;
+      }
+      console.log(`✅ ${day} polygons saved to MongoDB (${count} items)`);
 
-    const polygons = polygonRes.data;
-    console.log(`✅ Retrieved ${polygons.length} polygons.`);
-
-    // Store Polygons in MongoDB
-    for (const poly of polygons) {
-      await Polygon.updateOne(
-        { anchorAreaId: poly.id },
-        { $set: { name: poly.name, coordinates: poly.coordinates, workAreaId: poly.workAreaId, color: poly.color || "#FF0000" } },
-        { upsert: true }
+      console.log(`🚚 Fetching advanced vehicle set for ${day} (Plan ID: ${planId})...`);
+      const vehicleSetRes = await axios.get(
+        `${DRO_BASE}/service-areas/${serviceAreaId}/route-plans/${planId}/advanced-vehicle-set`,
+        { headers }
       );
+
+      const vehicleSet = vehicleSetRes.data;
+
+      await VehicleSet.deleteMany({ serviceAreaId, day });
+
+      await VehicleSet.create({
+        serviceAreaId,
+        day,
+        planId,
+        data: vehicleSet,
+        updatedAt: new Date()
+      });
+
+      console.log(`✅ ${day} vehicle set saved to MongoDB`);
     }
-
-    console.log("✅ Data successfully saved to MongoDB!");
-    process.exit();
-
-  } catch (error) {
-    console.error("❌ Error fetching DRO data:", error.response ? error.response.data : error.message);
-    process.exit(1);
+    console.log("🏁 Finished fetching all polygons.");
+    process.exit(0);
+  } catch (err) {
+    console.error("❌ Failed to fetch polygons:", err.response?.data || err.message);
   }
-};
 
-// Run the script
-fetchDROData();
+  await browser.close();
+}
+
+fetchPolygonsForAllPlans();

@@ -12,4 +12,17 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.get("/dro/manual-fetch", (req, res) => {
+  const { exec } = require("child_process");
+
+  exec("node src/scripts/fetchDROData.js", (err, stdout, stderr) => {
+    if (err) {
+      console.error(stderr);
+      return res.status(500).json({ message: "Failed to update maps" });
+    }
+    console.log(stdout);
+    res.json({ message: "Map successfully updated!" });
+  });
+});
+
 module.exports = router;  // Ensure you're exporting ONLY `router`

@@ -4,8 +4,10 @@ const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  droAccountId: { type: String, unique: true },  // Optional: DRO Account Linking
-  role: { type: String, enum: ["contractor", "admin"], default: "contractor" },
+  droUsername: { type: String, required: true }, // Added DRO username
+  droPassword: { type: String, required: true }, // Added DRO password
+  droToken: { type: String }, // Stores session token
+  serviceAreaId: { type: String, default: null }, // Selected CSA
 }, { timestamps: true });
 
 module.exports = mongoose.model("User", userSchema);
