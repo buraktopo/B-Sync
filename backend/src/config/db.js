@@ -10,7 +10,7 @@ const connectDB = async () => {
       serverSelectionTimeoutMS: 10000, // Prevents long hangs
     });
 
-    console.log(`✅ MongoDB Connected: ${mongoose.connection.host}`);
+    console.log(`✅ MongoDB Connected: ${mongoose.connection?.host || 'Unknown host'}`);
   } catch (error) {
     console.error(`❌ MongoDB Connection Error: ${error.message}`);
     process.exit(1);
