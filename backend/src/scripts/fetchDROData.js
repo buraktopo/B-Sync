@@ -7,11 +7,7 @@ const connectDB = require("../config/db");
 
 const DRO_BASE = "https://pdv2.dro.routesmart.com/api/api";
 
-async function fetchPolygonsForAllPlans(userId) {
-  if (!userId) {
-    throw new Error("User ID is required to fetch and save data.");
-  }
-
+async function fetchPolygonsForAllPlans() {
   const browser = await puppeteer.launch({
     headless: false,
     executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -69,19 +65,18 @@ async function fetchPolygonsForAllPlans(userId) {
 
       const polygons = res.data;
       console.log(`🧹 Deleting existing polygons for Service Area ${serviceAreaId}, Day: ${day}`);
-      await Polygon.deleteMany({ serviceAreaId: serviceAreaId, day: day, userId });
+      await Polygon.deleteMany({ serviceAreaId: serviceAreaId, day: day });
       console.log(`🧹 Cleared existing polygons for ${day}`);
       let count = 0;
       for (const poly of polygons) {
         await Polygon.updateOne(
-          { anchorAreaId: poly.anchorAreaId, day, userId },
+          { anchorAreaId: poly.anchorAreaId, day },
           {
             $set: {
               name: poly.name,
               coordinates: poly.shape?.rings,
               serviceAreaId: poly.serviceAreaId,
               day,
-              userId,
             },
           },
           { upsert: true }
@@ -98,14 +93,13 @@ async function fetchPolygonsForAllPlans(userId) {
 
       const vehicleSet = vehicleSetRes.data;
 
-      await VehicleSet.deleteMany({ serviceAreaId, day, userId });
+      await VehicleSet.deleteMany({ serviceAreaId, day });
 
       await VehicleSet.create({
         serviceAreaId,
         day,
         planId,
         data: vehicleSet,
-        userId,
         updatedAt: new Date()
       });
 
@@ -120,4 +114,4 @@ async function fetchPolygonsForAllPlans(userId) {
   await browser.close();
 }
 
-module.exports = fetchPolygonsForAllPlans;
+fetchPolygonsForAllPlans();

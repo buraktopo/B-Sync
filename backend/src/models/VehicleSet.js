@@ -1,11 +1,6 @@
 const mongoose = require("mongoose");
 
 const VehicleSetSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
   serviceAreaId: {
     type: Number,
     required: true,
@@ -28,6 +23,6 @@ const VehicleSetSchema = new mongoose.Schema({
   },
 });
 
-VehicleSetSchema.index({ userId: 1, serviceAreaId: 1, day: 1 }, { unique: true });
+VehicleSetSchema.index({ serviceAreaId: 1, day: 1 }, { unique: true });
 
 module.exports = mongoose.model("VehicleSet", VehicleSetSchema);
