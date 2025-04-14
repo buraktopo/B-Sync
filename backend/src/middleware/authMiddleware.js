@@ -14,6 +14,7 @@ const verifyToken = (req, res, next) => {
     req.user = decoded; // user ID and email from token
     next();
   } catch (err) {
+    console.error("JWT verification error:", err.message); // Log the error for debugging
     return res.status(403).json({ message: 'Invalid or expired token.' });
   }
 };
