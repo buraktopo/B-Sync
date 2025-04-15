@@ -3,7 +3,7 @@ import { TextField, Button, Container, Typography, Box } from "@mui/material";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-const Login = () => {
+const Register = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -15,13 +15,13 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post("http://localhost:5001/api/auth/login", formData);
-      console.log("Login successful:", response.data);
-      localStorage.setItem("token", response.data.token);
-      navigate("/dashboard");
+      const response = await axios.post("http://localhost:5001/api/auth/register", formData);
+      console.log("Registration successful:", response.data);
+      alert("Registration successful! Please log in.");
+      navigate("/login");
     } catch (err) {
-      console.error("Login error:", err.response?.data || err.message);
-      setError(err.response?.data?.message || "Login failed.");
+      console.error("Registration error:", err.response?.data || err.message);
+      setError(err.response?.data?.message || "Registration failed.");
     }
   };
 
@@ -29,7 +29,7 @@ const Login = () => {
     <Container maxWidth="sm">
       <Box mt={5}>
         <Typography variant="h4" gutterBottom>
-          Login
+          Register
         </Typography>
         {error && <Typography color="error">{error}</Typography>}
         <form onSubmit={handleSubmit}>
@@ -51,7 +51,7 @@ const Login = () => {
             margin="normal"
           />
           <Button type="submit" variant="contained" color="primary" fullWidth>
-            Login
+            Register
           </Button>
         </form>
       </Box>
@@ -59,4 +59,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Register;
