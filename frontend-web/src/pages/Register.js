@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import { TextField, Button, Container, Typography, Box } from "@mui/material";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 
 const Register = () => {
-  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [formData, setFormData] = useState({ email: "", password: "", name: "", phone: "" });
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -32,6 +34,17 @@ const Register = () => {
       setError(err.response?.data?.message || "Registration failed.");
     }
   };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword((prev) => !prev);
+  };
+
+  // Update password rules to include underlining
+  const passwordRules = `Password must be at least _8 characters long_
+  and contain at least _one uppercase letter_, 
+  _one lowercase letter_, 
+  _one number_, and 
+  _one special character_`;
 
   return (
     <Box minHeight="100vh" mt={-4}>
@@ -81,8 +94,42 @@ const Register = () => {
                 sx={{ maxWidth: 360 }}
                 label="Password"
                 name="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={formData.password}
+                onChange={handleChange}
+                margin="normal"
+                InputProps={{
+                  endAdornment: (
+                    <Button onClick={togglePasswordVisibility} size="small">
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </Button>
+                  )
+                }}
+              />
+              <Typography
+                variant="body2"
+                color="textSecondary"
+                align="left"
+                sx={{ maxWidth: 360, mt: 1 }}
+                dangerouslySetInnerHTML={{ __html: passwordRules.replace(/_(.*?)_/g, '<u>$1</u>') }}
+              />
+              <TextField
+                fullWidth
+                size="small"
+                sx={{ maxWidth: 360 }}
+                label="Name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                margin="normal"
+              />
+              <TextField
+                fullWidth
+                size="small"
+                sx={{ maxWidth: 360 }}
+                label="Phone"
+                name="phone"
+                value={formData.phone}
                 onChange={handleChange}
                 margin="normal"
               />
