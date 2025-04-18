@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { TextField, Button, Container, Typography, Box } from "@mui/material";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -7,6 +7,13 @@ const Register = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      navigate("/dashboard");
+    }
+  }, [navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -17,8 +24,9 @@ const Register = () => {
     try {
       const response = await axios.post("http://localhost:5001/api/auth/register", formData);
       console.log("Registration successful:", response.data);
+      localStorage.setItem("token", response.data.token); // Assuming the token is returned in the response
       alert("Registration successful! Please log in.");
-      navigate("/login");
+      navigate("/dashboard");
     } catch (err) {
       console.error("Registration error:", err.response?.data || err.message);
       setError(err.response?.data?.message || "Registration failed.");
@@ -27,7 +35,7 @@ const Register = () => {
 
   return (
     <Container maxWidth="sm">
-      <Box mt={5}>
+      <Box mt={5} display="flex" flexDirection="column" alignItems="center">
         <Typography variant="h4" gutterBottom>
           Register
         </Typography>
@@ -54,6 +62,14 @@ const Register = () => {
             Register
           </Button>
         </form>
+        <Box mt={2}>
+          <Typography variant="body2">
+            Already have an account?{" "}
+            <a href="/login" style={{ color: "#1976d2", textDecoration: "none" }}>
+              Log in →
+            </a>
+          </Typography>
+        </Box>
       </Box>
     </Container>
   );

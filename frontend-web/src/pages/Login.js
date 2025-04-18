@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { TextField, Button, Container, Typography, Box } from "@mui/material";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -7,6 +7,12 @@ const Login = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      navigate("/dashboard");
+    }
+  }, [navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -27,7 +33,7 @@ const Login = () => {
 
   return (
     <Container maxWidth="sm">
-      <Box mt={5}>
+      <Box mt={5} display="flex" flexDirection="column" alignItems="center">
         <Typography variant="h4" gutterBottom>
           Login
         </Typography>
@@ -54,6 +60,14 @@ const Login = () => {
             Login
           </Button>
         </form>
+        <Box mt={2}>
+          <Typography variant="body2">
+            New to B-Sync?{" "}
+            <a href="/register" style={{ color: "#1976d2", textDecoration: "none" }}>
+              Create an account →
+            </a>
+          </Typography>
+        </Box>
       </Box>
     </Container>
   );
