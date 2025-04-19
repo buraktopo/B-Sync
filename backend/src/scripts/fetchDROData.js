@@ -3,6 +3,7 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 const Polygon = require("../models/Polygon");
 const VehicleSet = require("../models/VehicleSet");
+const ServiceArea = require("../models/ServiceArea");
 const connectDB = require("../config/db");
 
 const DRO_BASE = "https://pdv2.dro.routesmart.com/api/api";
@@ -46,6 +47,27 @@ async function fetchPolygonsForAllPlans(userId) {
 
   try {
     const serviceAreasRes = await axios.get("https://dro.routesmart.com/api/api/service-areas", { headers });
+    const serviceAreas = serviceAreasRes.data;
+    if (!Array.isArray(serviceAreas) || serviceAreas.length === 0) {
+      throw new Error("No service areas found.");
+    }
+
+    // Remove existing service areas for the user before inserting new ones
+    await ServiceArea.deleteMany({ userId });
+
+    const serviceAreaDocs = serviceAreas.map((area) => ({
+      userId,
+      serviceAreaId: area.serviceAreaId,
+      csa: area.csa,
+      businessName: area.businessName,
+      stationId: area.stationId,
+      stationName: area.stationName,
+      createdAt: new Date(),
+    }));
+
+    await ServiceArea.insertMany(serviceAreaDocs);
+    console.log(`✅ Saved ${serviceAreaDocs.length} service areas to MongoDB`);
+
     const serviceAreaId = serviceAreasRes.data?.[0]?.serviceAreaId;
     if (!serviceAreaId) {
       throw new Error("No serviceAreaId found.");
