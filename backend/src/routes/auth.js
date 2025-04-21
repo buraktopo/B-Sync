@@ -56,28 +56,6 @@ router.post('/register', async (req, res) => {
     const hashed = await bcrypt.hash(password, 10);
     const user = await User.create({ email, password: hashed, name, phone });
 
-    // Fetch service areas from DRO API
-    const DRO_API_URL = "https://dro.routesmart.com/api/api/service-areas";
-    const serviceAreasResponse = await axios.get(DRO_API_URL);
-
-    if (!serviceAreasResponse.data || serviceAreasResponse.data.length === 0) {
-      console.error("DRO API request failed with status:", serviceAreasResponse.status);
-      console.error("DRO API response data:", serviceAreasResponse.data);
-      console.error("DRO API response:", serviceAreasResponse.data);
-      return res.status(500).json({ message: "Failed to fetch service areas from DRO." });
-    }
-
-    // Save service areas to the database
-    const serviceAreas = serviceAreasResponse.data.map((area) => ({
-      userId: user._id,
-      serviceAreaId: area.serviceAreaId,
-      csa: area.csa,
-      businessName: area.businessName,
-      stationId: area.stationId,
-      stationName: area.stationName,
-    }));
-
-    await ServiceArea.insertMany(serviceAreas);
 
     const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token });

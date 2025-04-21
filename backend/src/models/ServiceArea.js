@@ -30,6 +30,10 @@ const ServiceAreaSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  isActive: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 ServiceAreaSchema.index({ userId: 1, serviceAreaId: 1 }, { unique: true });

@@ -63,6 +63,7 @@ async function fetchPolygonsForAllPlans(userId) {
       stationId: area.stationId,
       stationName: area.stationName,
       createdAt: new Date(),
+      isActive: false,
     }));
 
     await ServiceArea.insertMany(serviceAreaDocs);
