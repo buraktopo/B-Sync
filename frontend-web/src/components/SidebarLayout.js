@@ -8,13 +8,13 @@ import { useNavigate, useLocation } from "react-router-dom";
 
 const SidebarLayout = ({ children }) => {
   const [open, setOpen] = useState(() => {
-    const storedOpen = localStorage.getItem("drawerOpen");
-    return storedOpen === null ? true : storedOpen === "true";
+    const savedCollapsed = localStorage.getItem("drawerCollapsed");
+    return savedCollapsed === "true" ? false : true;
   });
   const [drawerWidth, setDrawerWidth] = useState(() => {
     const savedWidth = localStorage.getItem("drawerWidth");
-    const drawerOpen = localStorage.getItem("drawerOpen");
-    if (drawerOpen === "false") return 0;
+    const collapsed = localStorage.getItem("drawerCollapsed") === "true";
+    if (collapsed) return 0;
     return savedWidth ? parseInt(savedWidth, 10) : 200;
   });
   const [resizing, setResizing] = useState(false);
@@ -26,36 +26,61 @@ const SidebarLayout = ({ children }) => {
   const drawerRef = useRef();
   const resizerRef = useRef();
 
+  const updateButtonPosition = (width) => {
+    if (buttonRef.current) {
+      buttonRef.current.style.left = `${width + 8}px`;
+    }
+  };
+
+  React.useLayoutEffect(() => {
+    const updateResizer = () => {
+      if (resizerRef.current) {
+        resizerRef.current.style.left = `${drawerWidth - 2}px`;
+      }
+      if (drawerRef.current) {
+        drawerRef.current.style.width = `${drawerWidth}px`;
+        const paper = drawerRef.current.querySelector(".MuiDrawer-paper");
+        if (paper) paper.style.width = `${drawerWidth}px`;
+      }
+      updateButtonPosition(drawerWidth);
+    };
+    requestAnimationFrame(updateResizer);
+  }, [drawerWidth]);
+
   React.useEffect(() => {
+    if (drawerRef.current) {
+      drawerRef.current.style.width = `${drawerWidth}px`;
+      const paper = drawerRef.current.querySelector(".MuiDrawer-paper");
+      if (paper) paper.style.width = `${drawerWidth}px`;
+    }
     if (resizerRef.current) {
       resizerRef.current.style.left = `${drawerWidth - 2}px`;
     }
-    if (buttonRef.current) {
-      buttonRef.current.style.left = `${drawerWidth + 8}px`;
-    }
+    updateButtonPosition(drawerWidth);
   }, [drawerWidth]);
 
   if (isAuthPage) return children;
 
   const toggleDrawer = () => {
-    const newOpenState = !open;
-    if (!newOpenState) {
+    if (open) {
       setDrawerWidth(0);
       localStorage.setItem("drawerWidth", 0);
-      if (buttonRef.current) buttonRef.current.style.left = `8px`;
+      localStorage.setItem("drawerCollapsed", "true");
+      updateButtonPosition(0);
+      setOpen(false);
     } else {
       const restoredWidth = 180;
       setDrawerWidth(restoredWidth);
       localStorage.setItem("drawerWidth", restoredWidth);
+      localStorage.setItem("drawerCollapsed", "false");
       if (drawerRef.current) {
         drawerRef.current.style.width = `${restoredWidth}px`;
         const paper = drawerRef.current.querySelector(".MuiDrawer-paper");
         if (paper) paper.style.width = `${restoredWidth}px`;
       }
-      if (buttonRef.current) buttonRef.current.style.left = `${restoredWidth + 8}px`;
+      updateButtonPosition(restoredWidth);
+      setOpen(true);
     }
-    setOpen(newOpenState);
-    localStorage.setItem("drawerOpen", newOpenState);
   };
 
   const navItems = [
@@ -129,8 +154,9 @@ const SidebarLayout = ({ children }) => {
               if (newWidth <= 100) {
                 setOpen(false);
                 newWidth = 0;
-                if (buttonRef.current) buttonRef.current.style.left = `8px`;
-                localStorage.setItem("drawerOpen", false);
+                drawerRef.current.style.width = `0px`;
+                drawerRef.current.querySelector(".MuiDrawer-paper").style.width = `0px`;
+                updateButtonPosition(0);
                 window.removeEventListener("mousemove", handleMouseMove);
                 window.removeEventListener("mouseup", handleMouseUp);
                 setResizing(false);
@@ -140,12 +166,12 @@ const SidebarLayout = ({ children }) => {
                 newWidth = Math.min(300, Math.max(180, newWidth));
               }
 
+              updateButtonPosition(newWidth);
               drawerRef.current.style.width = `${newWidth}px`;
               drawerRef.current.querySelector(".MuiDrawer-paper").style.width = `${newWidth}px`;
               resizerRef.current.style.left = `${newWidth - 2}px`;
               setDrawerWidth(newWidth);
               localStorage.setItem("drawerWidth", newWidth);
-              if (buttonRef.current) buttonRef.current.style.left = `${newWidth + 8}px`;
             });
           };
 
@@ -153,10 +179,7 @@ const SidebarLayout = ({ children }) => {
             const finalWidth = drawerRef.current.offsetWidth;
             setDrawerWidth(finalWidth);
             localStorage.setItem("drawerWidth", finalWidth);
-            if (buttonRef.current) buttonRef.current.style.left = `${finalWidth + 8}px`;
-            if (open) {
-              localStorage.setItem("drawerOpen", true);
-            }
+            updateButtonPosition(finalWidth);
             setResizing(false);
             window.removeEventListener("mousemove", handleMouseMove);
             window.removeEventListener("mouseup", handleMouseUp);
