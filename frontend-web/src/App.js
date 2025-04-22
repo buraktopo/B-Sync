@@ -9,28 +9,30 @@ import Settings from "./pages/Settings.js";
 
 function App() {
   return (
-    <SidebarLayout>
-      <Routes>
-        <Route path="/register" element={<Register />} />
-        <Route path="/login" element={<Login />} />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
+    <Routes>
+      <Route path="/register" element={<Register />} />
+      <Route path="/login" element={<Login />} />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <SidebarLayout>
               <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
+            </SidebarLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <SidebarLayout>
               <Settings />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </SidebarLayout>
+            </SidebarLayout>
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
   );
 }
 
