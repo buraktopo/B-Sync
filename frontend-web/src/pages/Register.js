@@ -18,13 +18,20 @@ const Register = () => {
   }, [navigate]);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const processedData = {
+      email: formData.email.replace(/\s/g, ""),
+      password: formData.password.replace(/\s/g, ""),
+      name: formData.name,
+      phone: formData.phone,
+    };
     try {
-      const response = await axios.post("http://localhost:5001/api/auth/register", formData);
+      const response = await axios.post("http://localhost:5001/api/auth/register", processedData);
       console.log("Registration successful:", response.data);
       localStorage.setItem("token", response.data.token); // Assuming the token is returned in the response
       alert("Registration successful! Please log in.");

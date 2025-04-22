@@ -21,6 +21,10 @@ const UserSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  activeServiceAreaId: {
+    type: Number,
+    default: null,
   }
 });
 

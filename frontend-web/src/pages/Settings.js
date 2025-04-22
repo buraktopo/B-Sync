@@ -1,14 +1,20 @@
-
-
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Box, Button, Container, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress } from "@mui/material";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import { useNavigate } from "react-router-dom";
 
 const Settings = () => {
   const [serviceAreas, setServiceAreas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeServiceAreaId, setActiveServiceAreaId] = useState(null);
   const token = localStorage.getItem("token");
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
 
   const fetchServiceAreas = async () => {
     try {
@@ -90,13 +96,17 @@ const Settings = () => {
                   <TableCell>{area.stationId}</TableCell>
                   <TableCell>{area.stationName}</TableCell>
                   <TableCell align="center">
-                    <Button
-                      variant="outlined"
-                      color={activeServiceAreaId === area.serviceAreaId ? "success" : "primary"}
-                      onClick={() => handleSetActive(area.serviceAreaId)}
-                    >
-                      {activeServiceAreaId === area.serviceAreaId ? "Active" : "Set Active"}
-                    </Button>
+                    {activeServiceAreaId === area.serviceAreaId ? (
+                      <CheckCircleIcon sx={{ color: "green" }} />
+                    ) : (
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        onClick={() => handleSetActive(area.serviceAreaId)}
+                      >
+                        Set Active
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -104,6 +114,11 @@ const Settings = () => {
           </Table>
         </TableContainer>
       )}
+      <Box textAlign="center" mt={4}>
+        <Button variant="outlined" color="error" onClick={handleLogout}>
+          Logout
+        </Button>
+      </Box>
     </Container>
   );
 };

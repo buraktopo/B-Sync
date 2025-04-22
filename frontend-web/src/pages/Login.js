@@ -15,13 +15,18 @@ const Login = () => {
   }, [navigate]);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const processedData = {
+      email: formData.email.replace(/\s/g, ""),
+      password: formData.password.replace(/\s/g, ""),
+    };
     try {
-      const response = await axios.post("http://localhost:5001/api/auth/login", formData);
+      const response = await axios.post("http://localhost:5001/api/auth/login", processedData);
       console.log("Login successful:", response.data);
       localStorage.setItem("token", response.data.token);
       navigate("/dashboard");

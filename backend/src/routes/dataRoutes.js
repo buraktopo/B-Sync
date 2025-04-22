@@ -1,6 +1,7 @@
 const express = require("express");
 const fetchPolygonsForAllPlans = require("../scripts/fetchDROData");
 const authenticateUser = require("../middleware/authenticateUser");
+const User = require("../models/User");
 
 const router = express.Router();
 const ServiceArea = require("../models/ServiceArea"); // <-- Make sure this is imported
@@ -26,6 +27,26 @@ router.get("/service-areas", authenticateUser, async (req, res) => {
   } catch (err) {
     console.error("Error fetching service areas:", err.message);
     res.status(500).json({ error: "Failed to fetch service areas." });
+  }
+});
+
+// Set a service area as active
+router.post("/set-active-service-area", authenticateUser, async (req, res) => {
+  const { serviceAreaId } = req.body;
+  const userId = req.userId;
+
+  try {
+    // 1. Update user's activeServiceAreaId
+    await User.findByIdAndUpdate(userId, { activeServiceAreaId: serviceAreaId });
+
+    // 2. Mark all service areas as inactive, then activate selected one
+    await ServiceArea.updateMany({ userId }, { isActive: false });
+    await ServiceArea.updateOne({ userId, serviceAreaId }, { isActive: true });
+
+    res.status(200).json({ message: "Active service area updated." });
+  } catch (err) {
+    console.error("Error setting active service area:", err.message);
+    res.status(500).json({ error: "Failed to set active service area." });
   }
 });
 
