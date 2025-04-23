@@ -80,106 +80,115 @@ const Settings = () => {
   }, [fetchServiceAreas, fetchUserInfo]);
 
   return (
-    <Container maxWidth="md" sx={{ mt: 6 }}>
-      <Typography variant="h4" gutterBottom textAlign="center">
+    <>
+      <div style={{ borderBottom: "1px solid #ddd", padding: "1rem 2rem", fontSize: "1.8rem", fontWeight: "500", textAlign: "left" }}>
         Settings
-      </Typography>
-      <Box textAlign="center" mb={4}>
-        <Button
-          variant="contained"
-          onClick={async () => {
-            try {
-              setLoading(true);
-              await axios.post("http://192.168.1.204:5001/api/data/fetch-data", {}, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              fetchServiceAreas();
-            } catch (err) {
-              console.error("Failed to fetch DRO data:", err.message);
-            } finally {
-              setLoading(false);
-            }
-          }}
-        >
-          Fetch DRO Data
-        </Button>
-      </Box>
+      </div>
+      <Container maxWidth="md" sx={{ mt: 6 }}>
+        <Box sx={{ width: "100%", maxWidth: "700px", mx: "auto", mt: 4 }}>
+          <Typography variant="h6" gutterBottom sx={{ textAlign: "left", fontWeight: 500, fontSize: "1.6rem", mb: 2 }}>
+            Dataset
+          </Typography>
+          <div style={{ display: "flex", justifyContent: "center", margin: "1rem 0" }}>
+            <Button
+              variant="contained"
+              onClick={async () => {
+                try {
+                  setLoading(true);
+                  await axios.post("http://192.168.1.204:5001/api/data/fetch-data", {}, {
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  fetchServiceAreas();
+                } catch (err) {
+                  console.error("Failed to fetch DRO data:", err.message);
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            >
+              Fetch DRO Data
+            </Button>
+          </div>
 
-      {loading ? (
-        <Box display="flex" justifyContent="center"><CircularProgress /></Box>
-      ) : (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell><strong>Service Area</strong></TableCell>
-                <TableCell><strong>Business Name</strong></TableCell>
-                <TableCell><strong>Station</strong></TableCell>
-                <TableCell><strong>Name</strong></TableCell>
-                <TableCell align="center"><strong>Action</strong></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {serviceAreas.map((area) => (
-                <TableRow key={area.serviceAreaId} selected={activeServiceAreaId === area.serviceAreaId}>
-                  <TableCell>{area.csa}</TableCell>
-                  <TableCell>{area.businessName}</TableCell>
-                  <TableCell>{area.stationId}</TableCell>
-                  <TableCell>{area.stationName}</TableCell>
-                  <TableCell align="center">
-                    {activeServiceAreaId === area.serviceAreaId ? (
-                      <CheckCircleIcon sx={{ color: "green" }} />
-                    ) : (
-                      <Button
-                        variant="outlined"
-                        color="primary"
-                        onClick={() => handleSetActive(area.serviceAreaId)}
-                      >
-                        Set Active
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
-      <Box textAlign="center" mt={4}>
-        <Button variant="outlined" color="error" onClick={handleLogout}>
-          Logout
-        </Button>
-      </Box>
-      <Box mt={6}>
-        <Typography variant="h5" gutterBottom>Profile Info</Typography>
-        {userInfo && (
-          <Box component="form" onSubmit={handleUserUpdate} display="flex" flexDirection="column" width="100%" maxWidth="400px" mx="auto">
-            <TextField
-              label="Name"
-              name="name"
-              value={userInfo.name}
-              onChange={handleUserInfoChange}
-              margin="normal"
-            />
-            <TextField
-              label="Phone"
-              name="phone"
-              value={userInfo.phone}
-              onChange={handleUserInfoChange}
-              margin="normal"
-            />
-            <TextField
-              label="Title"
-              name="title"
-              value={userInfo.title}
-              onChange={handleUserInfoChange}
-              margin="normal"
-            />
-            <Button type="submit" variant="contained" sx={{ mt: 2 }}>Update</Button>
+          {loading ? (
+            <Box display="flex" justifyContent="center"><CircularProgress /></Box>
+          ) : (
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell><strong>Service Area</strong></TableCell>
+                    <TableCell><strong>Business Name</strong></TableCell>
+                    <TableCell><strong>Station</strong></TableCell>
+                    <TableCell><strong>Name</strong></TableCell>
+                    <TableCell align="center"><strong>Action</strong></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {serviceAreas.map((area) => (
+                    <TableRow key={area.serviceAreaId} selected={activeServiceAreaId === area.serviceAreaId}>
+                      <TableCell>{area.csa}</TableCell>
+                      <TableCell>{area.businessName}</TableCell>
+                      <TableCell>{area.stationId}</TableCell>
+                      <TableCell>{area.stationName}</TableCell>
+                      <TableCell align="center">
+                        {activeServiceAreaId === area.serviceAreaId ? (
+                          <CheckCircleIcon sx={{ color: "green" }} />
+                        ) : (
+                          <Button
+                            variant="outlined"
+                            color="primary"
+                            onClick={() => handleSetActive(area.serviceAreaId)}
+                          >
+                            Set Active
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Box>
+        <Box sx={{ width: "100%", maxWidth: "700px", mx: "auto", mt: 10, mb: 10}}>
+          <Typography variant="h6" gutterBottom sx={{ textAlign: "left", fontWeight: 500, fontSize: "1.6rem", mb: 2 }}>
+            Profile Info
+          </Typography>
+          {userInfo && (
+            <Box component="form" onSubmit={handleUserUpdate} display="flex" flexDirection="column" width="100%" maxWidth="400px" mx="auto">
+              <TextField
+                label="Name"
+                name="name"
+                value={userInfo.name}
+                onChange={handleUserInfoChange}
+                margin="normal"
+              />
+              <TextField
+                label="Phone"
+                name="phone"
+                value={userInfo.phone}
+                onChange={handleUserInfoChange}
+                margin="normal"
+              />
+              <TextField
+                label="Title"
+                name="title"
+                value={userInfo.title}
+                onChange={handleUserInfoChange}
+                margin="normal"
+              />
+              <Button type="submit" variant="contained" sx={{ mt: 2 }}>Update</Button>
+            </Box>
+          )}
+        </Box>
+        <Box style={{ display: "flex", justifyContent: "center", marginTop: "2rem" }}>
+            <Button variant="outlined" color="error" onClick={handleLogout}>
+              Logout
+            </Button>
           </Box>
-        )}
-      </Box>
-    </Container>
+      </Container>
+    </>
   );
 };
 
