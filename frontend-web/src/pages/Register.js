@@ -3,6 +3,8 @@ import { TextField, Button, Container, Typography, Box } from "@mui/material";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
+import logo from '../assets/logo.png';
+
 
 const Register = () => {
   const [formData, setFormData] = useState({ email: "", password: "", name: "", phone: "" });
@@ -62,8 +64,8 @@ const Register = () => {
         flexDirection="column"
         textAlign="center"
       >
-        <Box display="flex" justifyContent="center" mb={2}>
-          <img src={require("../assets/logo.png")} alt="B-Sync Logo" style={{ height: "150px" }} />
+        <Box display="flex" justifyContent="center"  mt={4}>
+          <img src={logo} alt="AssistBC Logo" style={{ height: "200px" }} />
         </Box>
         <Container maxWidth="sm">
           <Box

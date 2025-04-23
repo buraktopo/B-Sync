@@ -16,26 +16,41 @@ async function fetchPolygonsForAllPlans(userId) {
   const browser = await puppeteer.launch({
     headless: false,
     executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-    args: ["--start-maximized"],
+    defaultViewport: null,
+    args: [
+      '--window-size=800,600',
+      '--window-position=' + Math.floor((1920 - 800) / 2) + ',' + Math.floor((1080 - 600) / 2)
+    ],
   });
 
   await connectDB();
 
   const page = await browser.newPage();
-  await page.goto("https://dro.routesmart.com/login");
-
-  await page.waitForSelector("button");
-  const buttons = await page.$$("button");
-  await buttons[0].click();
+  await page.goto("https://purpleid.okta.com/app/purpleid_routesmartdro_1/exk3v65bjnqglHK9W357/sso/saml", {
+    waitUntil: "networkidle2"
+  });
 
   console.log("🔐 Please log in manually via the popup...");
 
-  await page.waitForResponse(
-    (res) => res.url().includes("/api/api/service-areas") && res.status() === 200,
+  await page.waitForNavigation({ waitUntil: "networkidle2" });
+
+  // Wait until redirected to the authorized page
+  await page.waitForFunction(
+    () => window.location.href.includes("https://dro.routesmart.com/authorization/saml/csp"),
     { timeout: 180000 }
   );
 
+  console.log("🔓 Login completed, continuing data fetch...");
+  
+  const client = await page.target().createCDPSession();
+  const { windowId } = await client.send('Browser.getWindowForTarget');
+  await client.send('Browser.setWindowBounds', {
+    windowId,
+    bounds: { windowState: 'minimized' }
+  });
+
   const cookies = await page.cookies();
+  await page.close();
   const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join("; ");
 
   const headers = {
@@ -68,6 +83,20 @@ async function fetchPolygonsForAllPlans(userId) {
 
     await ServiceArea.insertMany(serviceAreaDocs);
     console.log(`✅ Saved ${serviceAreaDocs.length} service areas to MongoDB`);
+
+    // Ensure correct isActive after insert
+    const existingActive = await ServiceArea.findOne({ userId, isActive: true });
+    const newServiceAreas = await ServiceArea.find({ userId });
+
+    if (existingActive) {
+      const stillExists = newServiceAreas.some(area => area.serviceAreaId === existingActive.serviceAreaId);
+      if (!stillExists) {
+        await ServiceArea.updateMany({ userId }, { $set: { isActive: false } });
+        await ServiceArea.updateOne({ userId, serviceAreaId: newServiceAreas[0].serviceAreaId }, { $set: { isActive: true } });
+      }
+    } else {
+      await ServiceArea.updateOne({ userId, serviceAreaId: newServiceAreas[0].serviceAreaId }, { $set: { isActive: true } });
+    }
 
     const serviceAreaId = serviceAreasRes.data?.[0]?.serviceAreaId;
     if (!serviceAreaId) {
@@ -159,7 +188,6 @@ async function fetchPolygonsForAllPlans(userId) {
       console.log(`✅ ${day} vehicle set saved to MongoDB`);
     }
     console.log("🏁 Finished fetching all polygons.");
-    process.exit(0);
   } catch (err) {
     console.error("❌ Failed to fetch polygons:", err.response?.data || err.message);
   }

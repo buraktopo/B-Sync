@@ -11,6 +11,7 @@ mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 const Dashboard = () => {
   const mapContainer = useRef(null);
   const map = useRef(null);
+  const searchPopup = useRef(null);
   const [selectedDay, setSelectedDay] = useState(localStorage.getItem("selectedDay") || "monday");
   
   useEffect(() => {
@@ -36,6 +37,10 @@ const Dashboard = () => {
     map.current.addControl(geocoder, 'top-left');
 
     geocoder.on('result', (e) => {
+      // Remove previous search popup if it exists
+      if (searchPopup.current) {
+        searchPopup.current.remove();
+      }
       const point = turf.point([e.result.center[0], e.result.center[1]]);
     
       let matchedWorkArea = null;
@@ -57,7 +62,7 @@ const Dashboard = () => {
       });
     
       if (matchedWorkArea) {
-        new mapboxgl.Popup()
+        searchPopup.current = new mapboxgl.Popup()
           .setLngLat(e.result.center)
           .setHTML(`<div style="font-size: 20px; font-weight: bold; padding: 10px 10px;">${matchedWorkArea}</div>`)
           .addTo(map.current);
