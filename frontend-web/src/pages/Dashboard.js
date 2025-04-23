@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import "../styles/Dashboard.css";
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
@@ -14,7 +15,7 @@ const Dashboard = () => {
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/mapbox/streets-v11",
+      style: "mapbox://styles/mapbox/streets-v12",
       center: [-77.0369, 38.9072],
       zoom: 9,
     });
@@ -25,8 +26,8 @@ const Dashboard = () => {
 
     const generateColor = (index) => {
       const baseColors = [
-        "#1f77b4", "#2ca02c", "#ff7f0e", "#d62728", "#9467bd",
-        "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"
+        "rgba(31, 119, 180, 0.6)", "rgba(44, 160, 44, 0.6)", "rgba(255, 127, 14, 0.6)", "rgba(214, 39, 40, 0.6)", "rgba(148, 103, 189, 0.6)",
+        "rgba(140, 86, 75, 0.6)", "rgba(227, 119, 194, 0.6)", "rgba(127, 127, 127, 0.6)", "rgba(188, 189, 34, 0.6)", "rgba(23, 190, 207, 0.6)"
       ];
       return baseColors[index % baseColors.length];
     };
@@ -145,29 +146,72 @@ const Dashboard = () => {
   }, [selectedDay]);
 
   return (
-    <div style={{ height: "100vh", width: "100%" }}>
-      <div style={{ padding: "1rem", display: "flex", gap: "0.5rem", justifyContent: "center" }}>
-        {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((day) => (
-          <button
-            key={day}
-            onClick={() => {
-              setSelectedDay(day);
-              localStorage.setItem("selectedDay", day);
-            }}
-            style={{
-              padding: "0.5rem 1rem",
-              backgroundColor: selectedDay === day ? "#007bff" : "#f0f0f0",
-              color: selectedDay === day ? "white" : "black",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
-            {day.slice(0, 3).toUpperCase()}
-          </button>
-        ))}
+    <div 
+      style={{
+        height: "calc(100vh - 20px)",
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        boxSizing: "border-box",
+        fontFamily: "Roboto, sans-serif"
+        
+      }}>
+      <div style={{
+        borderBottom: "1px solid #ddd",
+        padding: "1rem",
+        fontSize: "1.5rem",
+        fontWeight: "500",
+        textAlign: "left"
+      }}>
+        Dashboard
       </div>
-      <div ref={mapContainer} style={{ height: "100%", width: "100%" }} />
+  
+      <div style={{
+        padding: "1rem",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "0.5rem"
+      }}>
+        <div style={{ fontWeight: 500 }}>Filter by day</div>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((day) => (
+            <button
+              key={day}
+              onClick={() => {
+                setSelectedDay(day);
+                localStorage.setItem("selectedDay", day);
+              }}
+              style={{
+                padding: "0.5rem 1rem",
+                backgroundColor: selectedDay === day ? "#007bff" : "#f0f0f0",
+                color: selectedDay === day ? "white" : "black",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              {day.slice(0, 3).toUpperCase()}
+            </button>
+          ))}
+        </div>
+      </div>
+  
+      <div
+        ref={mapContainer}
+        style={{
+          flexGrow: 1,
+          height: "100%",
+          width: "calc(100% - 2rem)",
+          maxWidth: "100%",
+          borderRadius: "20px",
+          overflow: "hidden",
+          boxSizing: "border-box",
+          
+          margin: "0 1rem",
+        }}
+      />
     </div>
   );
 };
