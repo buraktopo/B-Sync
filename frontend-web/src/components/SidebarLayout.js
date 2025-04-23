@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import SettingsIcon from '@mui/icons-material/Settings';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -7,7 +7,6 @@ import { useLocation } from 'react-router-dom';
 
 const minCollapsedWidth = 80;
 const minExpandedWidth = 220;
-const MAX_WIDTH = 350; // Maximum width for the sidebar
 
 export default function SidebarLayout({ children, sidebarContent }) {
   const [collapsed, setCollapsed] = useState(() => {
@@ -15,30 +14,25 @@ export default function SidebarLayout({ children, sidebarContent }) {
     return storedCollapsed === 'true' ? true : false;
   });
 
-  const [width, setWidth] = useState(() => {
-    const storedWidth = parseInt(localStorage.getItem('sidebar-width'), 10);
-    if (!isNaN(storedWidth)) {
-      return storedWidth < minExpandedWidth ? minExpandedWidth : storedWidth;
-    }
-    return minExpandedWidth;
-  });
-
   const [userInfo, setUserInfo] = useState(null);
 
   useEffect(() => {
+    const storedUser = localStorage.getItem("user-info");
+    if (storedUser) {
+      setUserInfo(JSON.parse(storedUser));
+    }
+
     const fetchUserInfo = async () => {
       try {
         const token = localStorage.getItem('token');
         const res = await fetch("http://192.168.1.204:5001/api/user/me", {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+          headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
         const userData = {
           name: data.name,
           title: data.title,
-          profilePhotoUrl: data.profilePhotoUrl, // backend should provide this
+          profilePhotoUrl: data.profilePhotoUrl,
         };
         setUserInfo(userData);
         localStorage.setItem("user-info", JSON.stringify(userData));
@@ -50,76 +44,16 @@ export default function SidebarLayout({ children, sidebarContent }) {
     fetchUserInfo();
   }, []);
 
-  const sidebarRef = useRef(null);
-  const isResizing = useRef(false);
-  const lastWidth = useRef(width);
-
   useEffect(() => {
     localStorage.setItem('sidebar-collapsed', collapsed);
   }, [collapsed]);
 
-  useEffect(() => {
-    localStorage.setItem('sidebar-width', width);
-  }, [width]);
-
-  const onMouseMove = useRef(null);
-
-  const onMouseDown = () => {
-    isResizing.current = true;
-
-    onMouseMove.current = (e) => {
-      if (!isResizing.current) return;
-
-      requestAnimationFrame(() => {
-        const newWidth = e.clientX;
-
-        if (newWidth > MAX_WIDTH) {
-          setCollapsed(false);
-          setWidth(MAX_WIDTH);
-          lastWidth.current = MAX_WIDTH;
-          return;
-        }
-
-        if (newWidth < minExpandedWidth && newWidth > minExpandedWidth - 80) return;
-
-        if (newWidth <= minExpandedWidth - 80) {
-          setCollapsed(true);
-          setWidth(minCollapsedWidth);
-        } else {
-          setCollapsed(false);
-          setWidth(newWidth);
-          lastWidth.current = newWidth;
-        }
-      });
-    };
-
-    document.addEventListener('mousemove', onMouseMove.current);
-    document.addEventListener('mouseup', onMouseUp);
-  };
-
-  const onMouseUp = () => {
-    isResizing.current = false;
-    if (onMouseMove.current) {
-      document.removeEventListener('mousemove', onMouseMove.current);
-      onMouseMove.current = null;
-    }
-    document.removeEventListener('mouseup', onMouseUp);
-  };
-
   const toggleCollapsed = () => {
-    if (collapsed) {
-      const newWidth = lastWidth.current >= minExpandedWidth ? lastWidth.current : minExpandedWidth;
-      setWidth(newWidth);
-      setCollapsed(false);
-    } else {
-      lastWidth.current = width;
-      setCollapsed(true);
-      setWidth(minCollapsedWidth);
-    }
+    setCollapsed(prev => !prev);
   };
 
   const sidebarStyle = {
-    width: collapsed ? minCollapsedWidth : width,
+    width: collapsed ? minCollapsedWidth : minExpandedWidth,
     transition: 'width 0.2s cubic-bezier(0.4, 0.0, 0.2, 1)',
     height: '100vh',
     backgroundColor: '#2c3e50',
@@ -172,17 +106,6 @@ export default function SidebarLayout({ children, sidebarContent }) {
     gap: '10px',
   };
 
-  const resizerStyle = {
-    width: '5px',
-    cursor: 'col-resize',
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 100,
-    userSelect: 'none',
-  };
-
   const location = useLocation();
 
   const navLinks = [
@@ -194,10 +117,10 @@ export default function SidebarLayout({ children, sidebarContent }) {
     <div style={{
       display: 'flex',
       height: '100vh',
-      marginLeft: collapsed ? minCollapsedWidth : width,
+      marginLeft: collapsed ? minCollapsedWidth : minExpandedWidth,
       transition: 'margin-left 0.2s cubic-bezier(0.4, 0.0, 0.2, 1)',
     }}>
-      <div ref={sidebarRef} style={sidebarStyle}>
+      <div style={sidebarStyle}>
         {!collapsed && (
           <div style={{
             display: 'flex',
@@ -267,23 +190,26 @@ export default function SidebarLayout({ children, sidebarContent }) {
           })}
           {sidebarContent}
         </div>
-        {userInfo && (
-          <div style={{
-            height: '100px',
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderTop: '1px solid #34495e',
-            marginTop: 'auto',
-          }}>
+        <div style={{
+          height: '100px',
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderTop: '1px solid #34495e',
+          marginTop: 'auto',
+          padding: '0 16px',
+          boxSizing: 'border-box',
+          gap: '12px'
+        }}>
+          {userInfo && (
             <div style={{
               display: 'flex',
-              flexDirection: collapsed ? 'column' : 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              height: '100%',
-              textAlign: 'center',
+              gap: '12px',
+              maxWidth: '150px',
+              textAlign: 'left'
             }}>
               <div style={{
                 backgroundColor: `hsl(${Math.floor(userInfo.name?.charCodeAt(0) * 10 % 360)}, 70%, 60%)`,
@@ -296,19 +222,35 @@ export default function SidebarLayout({ children, sidebarContent }) {
                 fontSize: '20px',
                 color: '#fff',
                 fontWeight: 'bold',
+                flexShrink: 0
               }}>
                 {userInfo.name?.[0]?.toUpperCase()}
               </div>
               {!collapsed && (
-                <>
-                  <div style={{ fontSize: '18px', fontWeight: 500 }}>{userInfo.name}</div>
-                  <div style={{ fontSize: '14px', color: '#bdc3c7' }}>{userInfo.title}</div>
-                </>
+                <div style={{ overflow: 'hidden' }}>
+                  <div style={{
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    color: '#ecf0f1',
+                    whiteSpace: 'normal',
+                    wordWrap: 'break-word',
+                    lineHeight: '1.2'
+                  }}>
+                    {userInfo.name}
+                  </div>
+                  <div style={{
+                    fontSize: '14px',
+                    color: '#bdc3c7',
+                    whiteSpace: 'normal',
+                    wordWrap: 'break-word',
+                  }}>
+                    {userInfo.title}
+                  </div>
+                </div>
               )}
             </div>
-          </div>
-        )}
-        <div style={resizerStyle} onMouseDown={onMouseDown} />
+          )}
+        </div>
       </div>
       <div style={{ flex: 1, overflow: 'auto' }}>
         {children}

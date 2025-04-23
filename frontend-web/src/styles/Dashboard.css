@@ -8,3 +8,9 @@
     overflow: hidden; /* Avoid scrollbars */
     font-family: 'Roboto', sans-serif;
   }
+
+  .mapboxgl-ctrl-geocoder {
+    min-width: 300px;
+    font-family: Roboto, sans-serif;
+    z-index: 2;
+  }
