@@ -31,7 +31,7 @@ const Register = () => {
       phone: formData.phone,
     };
     try {
-      const response = await axios.post("http://localhost:5001/api/auth/register", processedData);
+      const response = await axios.post("http://192.168.1.204:5001/api/auth/register", processedData);
       console.log("Registration successful:", response.data);
       localStorage.setItem("token", response.data.token); // Assuming the token is returned in the response
       alert("Registration successful! Please log in.");

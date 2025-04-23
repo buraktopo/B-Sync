@@ -25,7 +25,15 @@ const UserSchema = new mongoose.Schema({
   activeServiceAreaId: {
     type: Number,
     default: null,
-  }
+  },
+  profilePhoto: {
+    type: String, // this will be the URL or base64 string
+    default: "",
+  },
+  title: {
+    type: String, // e.g., "Manager", "Owner", etc.
+    default: "",
+  },
 });
 
 module.exports = mongoose.model('User', UserSchema);

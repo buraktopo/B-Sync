@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
-import { Box, Button, Container, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress } from "@mui/material";
+import { Box, Button, Container, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress, TextField } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { useNavigate } from "react-router-dom";
 
@@ -11,15 +11,17 @@ const Settings = () => {
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
 
+  const [userInfo, setUserInfo] = useState(null);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/login");
   };
 
-  const fetchServiceAreas = async () => {
+  const fetchServiceAreas = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get("http://localhost:5001/api/data/service-areas", {
+      const response = await axios.get("http://192.168.1.204:5001/api/data/service-areas", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setServiceAreas(response.data);
@@ -29,12 +31,40 @@ const Settings = () => {
     } finally {
       setLoading(false);
     }
+  }, [token]);
+
+  const fetchUserInfo = useCallback(async () => {
+    try {
+      const res = await axios.get("http://192.168.1.204:5001/api/user/me", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUserInfo(res.data);
+    } catch (err) {
+      console.error("Failed to fetch user info:", err.message);
+    }
+  }, [token]);
+
+  const handleUserInfoChange = (e) => {
+    const { name, value } = e.target;
+    setUserInfo((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleUserUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.put("http://192.168.1.204:5001/api/user/me", userInfo, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert("User profile updated successfully!");
+    } catch (err) {
+      console.error("Failed to update user info:", err.message);
+    }
   };
 
   const handleSetActive = async (serviceAreaId) => {
     try {
       await axios.post(
-        "http://localhost:5001/api/data/set-active-service-area",
+        "http://192.168.1.204:5001/api/data/set-active-service-area",
         { serviceAreaId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -46,7 +76,8 @@ const Settings = () => {
 
   useEffect(() => {
     fetchServiceAreas();
-  }, []);
+    fetchUserInfo();
+  }, [fetchServiceAreas, fetchUserInfo]);
 
   return (
     <Container maxWidth="md" sx={{ mt: 6 }}>
@@ -59,7 +90,7 @@ const Settings = () => {
           onClick={async () => {
             try {
               setLoading(true);
-              await axios.post("http://localhost:5001/api/data/fetch-data", {}, {
+              await axios.post("http://192.168.1.204:5001/api/data/fetch-data", {}, {
                 headers: { Authorization: `Bearer ${token}` },
               });
               fetchServiceAreas();
@@ -118,6 +149,35 @@ const Settings = () => {
         <Button variant="outlined" color="error" onClick={handleLogout}>
           Logout
         </Button>
+      </Box>
+      <Box mt={6}>
+        <Typography variant="h5" gutterBottom>Profile Info</Typography>
+        {userInfo && (
+          <Box component="form" onSubmit={handleUserUpdate} display="flex" flexDirection="column" width="100%" maxWidth="400px" mx="auto">
+            <TextField
+              label="Name"
+              name="name"
+              value={userInfo.name}
+              onChange={handleUserInfoChange}
+              margin="normal"
+            />
+            <TextField
+              label="Phone"
+              name="phone"
+              value={userInfo.phone}
+              onChange={handleUserInfoChange}
+              margin="normal"
+            />
+            <TextField
+              label="Title"
+              name="title"
+              value={userInfo.title}
+              onChange={handleUserInfoChange}
+              margin="normal"
+            />
+            <Button type="submit" variant="contained" sx={{ mt: 2 }}>Update</Button>
+          </Box>
+        )}
       </Box>
     </Container>
   );

@@ -26,7 +26,7 @@ const Login = () => {
       password: formData.password.replace(/\s/g, ""),
     };
     try {
-      const response = await axios.post("http://localhost:5001/api/auth/login", processedData);
+      const response = await axios.post("http://192.168.1.204:5001/api/auth/login", processedData);
       console.log("Login successful:", response.data);
       localStorage.setItem("token", response.data.token);
       navigate("/dashboard");

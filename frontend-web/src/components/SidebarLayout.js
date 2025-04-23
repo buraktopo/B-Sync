@@ -4,6 +4,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useLocation } from 'react-router-dom';
 
+
 const minCollapsedWidth = 80;
 const minExpandedWidth = 220;
 const MAX_WIDTH = 350; // Maximum width for the sidebar
@@ -22,6 +23,33 @@ export default function SidebarLayout({ children, sidebarContent }) {
     return minExpandedWidth;
   });
 
+  const [userInfo, setUserInfo] = useState(null);
+
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch("http://192.168.1.204:5001/api/user/me", {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        const data = await res.json();
+        const userData = {
+          name: data.name,
+          title: data.title,
+          profilePhotoUrl: data.profilePhotoUrl, // backend should provide this
+        };
+        setUserInfo(userData);
+        localStorage.setItem("user-info", JSON.stringify(userData));
+      } catch (err) {
+        console.error("Failed to load user info:", err.message);
+      }
+    };
+
+    fetchUserInfo();
+  }, []);
+
   const sidebarRef = useRef(null);
   const isResizing = useRef(false);
   const lastWidth = useRef(width);
@@ -34,38 +62,47 @@ export default function SidebarLayout({ children, sidebarContent }) {
     localStorage.setItem('sidebar-width', width);
   }, [width]);
 
-  const onMouseDown = (e) => {
+  const onMouseMove = useRef(null);
+
+  const onMouseDown = () => {
     isResizing.current = true;
-    document.addEventListener('mousemove', onMouseMove);
+
+    onMouseMove.current = (e) => {
+      if (!isResizing.current) return;
+
+      requestAnimationFrame(() => {
+        const newWidth = e.clientX;
+
+        if (newWidth > MAX_WIDTH) {
+          setCollapsed(false);
+          setWidth(MAX_WIDTH);
+          lastWidth.current = MAX_WIDTH;
+          return;
+        }
+
+        if (newWidth < minExpandedWidth && newWidth > minExpandedWidth - 80) return;
+
+        if (newWidth <= minExpandedWidth - 80) {
+          setCollapsed(true);
+          setWidth(minCollapsedWidth);
+        } else {
+          setCollapsed(false);
+          setWidth(newWidth);
+          lastWidth.current = newWidth;
+        }
+      });
+    };
+
+    document.addEventListener('mousemove', onMouseMove.current);
     document.addEventListener('mouseup', onMouseUp);
-  };
-
-  const onMouseMove = (e) => {
-    if (!isResizing.current) return;
-    const newWidth = e.clientX;
-
-    if (newWidth > MAX_WIDTH) {
-      setCollapsed(false);
-      setWidth(MAX_WIDTH);
-      lastWidth.current = MAX_WIDTH;
-      return;
-    }
-
-    if (newWidth < minExpandedWidth && newWidth > minExpandedWidth - 80) return;
-
-    if (newWidth <= minExpandedWidth - 80) {
-      setCollapsed(true);
-      setWidth(minCollapsedWidth);
-    } else {
-      setCollapsed(false);
-      setWidth(newWidth);
-      lastWidth.current = newWidth;
-    }
   };
 
   const onMouseUp = () => {
     isResizing.current = false;
-    document.removeEventListener('mousemove', onMouseMove);
+    if (onMouseMove.current) {
+      document.removeEventListener('mousemove', onMouseMove.current);
+      onMouseMove.current = null;
+    }
     document.removeEventListener('mouseup', onMouseUp);
   };
 
@@ -83,7 +120,7 @@ export default function SidebarLayout({ children, sidebarContent }) {
 
   const sidebarStyle = {
     width: collapsed ? minCollapsedWidth : width,
-    transition: 'width 0.1s linear',
+    transition: 'width 0.2s cubic-bezier(0.4, 0.0, 0.2, 1)',
     height: '100vh',
     backgroundColor: '#2c3e50',
     color: '#ecf0f1',
@@ -154,11 +191,38 @@ export default function SidebarLayout({ children, sidebarContent }) {
   ];
 
   return (
-    <div style={{ display: 'flex', height: '100vh', marginLeft: collapsed ? minCollapsedWidth : width }}>
+    <div style={{
+      display: 'flex',
+      height: '100vh',
+      marginLeft: collapsed ? minCollapsedWidth : width,
+      transition: 'margin-left 0.2s cubic-bezier(0.4, 0.0, 0.2, 1)',
+    }}>
       <div ref={sidebarRef} style={sidebarStyle}>
-        <button onClick={toggleCollapsed} style={toggleButtonStyle} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
-          {<MenuIcon />}
-        </button>
+        {!collapsed && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            padding: '12px 16px 8px 16px',
+            width: '100%',
+            boxSizing: 'border-box',
+            justifyContent: 'flex-start',
+          }}>
+            <button onClick={toggleCollapsed} style={toggleButtonStyle} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+              {<MenuIcon />}
+            </button>
+            <span style={{
+              fontSize: '30px',
+              fontWeight: 'bold',
+              color: '#ecf0f1',
+            }}>AssistBC</span>
+          </div>
+        )}
+        {collapsed && (
+          <button onClick={toggleCollapsed} style={toggleButtonStyle} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+            {<MenuIcon />}
+          </button>
+        )}
         <div style={contentStyle}>
           {navLinks.map((link) => {
             const isActive = location.pathname === link.to;
@@ -203,6 +267,47 @@ export default function SidebarLayout({ children, sidebarContent }) {
           })}
           {sidebarContent}
         </div>
+        {userInfo && (
+          <div style={{
+            height: '100px',
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderTop: '1px solid #34495e',
+            marginTop: 'auto',
+          }}>
+            <div style={{
+              display: 'flex',
+              flexDirection: collapsed ? 'column' : 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              textAlign: 'center',
+            }}>
+              <div style={{
+                backgroundColor: `hsl(${Math.floor(userInfo.name?.charCodeAt(0) * 10 % 360)}, 70%, 60%)`,
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '20px',
+                color: '#fff',
+                fontWeight: 'bold',
+              }}>
+                {userInfo.name?.[0]?.toUpperCase()}
+              </div>
+              {!collapsed && (
+                <>
+                  <div style={{ fontSize: '18px', fontWeight: 500 }}>{userInfo.name}</div>
+                  <div style={{ fontSize: '14px', color: '#bdc3c7' }}>{userInfo.title}</div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
         <div style={resizerStyle} onMouseDown={onMouseDown} />
       </div>
       <div style={{ flex: 1, overflow: 'auto' }}>

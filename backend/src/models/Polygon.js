@@ -3,7 +3,10 @@ const mongoose = require("mongoose");
 const PolygonSchema = new mongoose.Schema({
   anchorAreaId: Number,
   name: String,
-  coordinates: [[[Number]]], // shape.rings format
+  coordinates: {
+    type: [[Number]],
+    required: true,
+  }, // flat [lng, lat] coordinates for Mapbox
   serviceAreaId: Number,
   day: String,
   userId: {

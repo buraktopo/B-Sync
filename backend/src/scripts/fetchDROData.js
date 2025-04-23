@@ -82,6 +82,15 @@ async function fetchPolygonsForAllPlans(userId) {
       }
     }
 
+    const webMercatorToLatLng = (x, y) => {
+      const rMajor = 6378137.0;
+      const shift = Math.PI * rMajor;
+      const lng = (x / shift) * 180.0;
+      let lat = (y / shift) * 180.0;
+      lat = (180 / Math.PI) * (2 * Math.atan(Math.exp(lat * Math.PI / 180.0)) - Math.PI / 2);
+      return [lng, lat];
+    };
+
     for (const [day, planId] of Object.entries(planIdByDay)) {
       console.log(`📦 Fetching polygons for ${day} (Plan ID: ${planId})...`);
 
@@ -94,22 +103,37 @@ async function fetchPolygonsForAllPlans(userId) {
       console.log(`🧹 Deleting existing polygons for Service Area ${serviceAreaId}, Day: ${day}`);
       await Polygon.deleteMany({ serviceAreaId: serviceAreaId, day: day, userId });
       console.log(`🧹 Cleared existing polygons for ${day}`);
+
       let count = 0;
       for (const poly of polygons) {
-        await Polygon.updateOne(
-          { anchorAreaId: poly.anchorAreaId, day, userId },
-          {
-            $set: {
-              name: poly.name,
-              coordinates: poly.shape?.rings,
-              serviceAreaId: poly.serviceAreaId,
-              day,
-              userId,
+        const shapeData = poly.shape;
+        try {
+          const parsedShape = typeof shapeData === 'string' ? JSON.parse(shapeData) : shapeData;
+          const transformedShape = parsedShape.rings[0].map(([x, y]) => {
+            const [lng, lat] = webMercatorToLatLng(x, y);
+            return [lng, lat];
+          });
+
+          await Polygon.updateOne(
+            { anchorAreaId: poly.anchorAreaId, day, userId },
+            {
+              $set: {
+                anchorAreaId: poly.anchorAreaId,
+                serviceAreaId: poly.serviceAreaId,
+                name: poly.name,
+                station: poly.station || "",
+                coordinates: transformedShape,
+                anchorAreaTypes: poly.anchorAreaTypes || [],
+                day,
+                userId,
+              },
             },
-          },
-          { upsert: true }
-        );
-        count++;
+            { upsert: true }
+          );
+          count++;
+        } catch (err) {
+          console.warn(`⚠️ Skipping ${poly.name} — failed to parse or convert shape data:`, err.message);
+        }
       }
       console.log(`✅ ${day} polygons saved to MongoDB (${count} items)`);
 

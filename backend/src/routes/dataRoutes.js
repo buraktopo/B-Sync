@@ -1,7 +1,9 @@
+const VehicleSet = require("../models/VehicleSet");
 const express = require("express");
 const fetchPolygonsForAllPlans = require("../scripts/fetchDROData");
 const authenticateUser = require("../middleware/authenticateUser");
 const User = require("../models/User");
+const Polygon = require("../models/Polygon");
 
 const router = express.Router();
 const ServiceArea = require("../models/ServiceArea"); // <-- Make sure this is imported
@@ -47,6 +49,57 @@ router.post("/set-active-service-area", authenticateUser, async (req, res) => {
   } catch (err) {
     console.error("Error setting active service area:", err.message);
     res.status(500).json({ error: "Failed to set active service area." });
+  }
+});
+
+// Get polygons for a specific day
+router.get("/polygons", authenticateUser, async (req, res) => {
+  const { day } = req.query;
+  const userId = req.userId;
+
+  try {
+    const polygons = await Polygon.find({ userId, day });
+    res.json(polygons);
+  } catch (error) {
+    console.error("Error fetching polygons:", error);
+    res.status(500).json({ error: "Failed to fetch polygons." });
+  }
+});
+
+// Group polygons by vehicle (work area) for a specific day
+router.get("/polygons/grouped", authenticateUser, async (req, res) => {
+  const { day } = req.query;
+  const userId = req.userId;
+
+  try {
+    const vehicleSet = await VehicleSet.findOne({ userId, day });
+
+    if (!vehicleSet) {
+      return res.status(404).json({ error: "Vehicle set not found." });
+    }
+
+    const grouped = [];
+
+    for (const vehicle of vehicleSet.data) {
+      const anchorIds = vehicle.anchorAreas.map(a => a.anchorAreaId);
+
+      const polygons = await Polygon.find({
+        userId,
+        day,
+        anchorAreaId: { $in: anchorIds }
+      });
+
+      grouped.push({
+        vehicleName: vehicle.vehicleName,
+        workAreaNumber: vehicle.workAreaNumber,
+        polygons
+      });
+    }
+
+    res.json(grouped);
+  } catch (err) {
+    console.error("Error grouping polygons:", err);
+    res.status(500).json({ error: "Failed to group polygons." });
   }
 });
 

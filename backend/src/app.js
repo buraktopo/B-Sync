@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 
 const authRoutes = require("./routes/auth");
 const dataRoutes = require("./routes/dataRoutes");
+const userRoutes = require("./routes/user");
 const authenticateUser = require("./middleware/authenticateUser");
 
 const app = express();
@@ -15,6 +16,7 @@ app.use("/api/auth", authRoutes);
 
 // protected: every route in dataRoutes now requires a valid JWT
 app.use("/api/data", authenticateUser, dataRoutes);
+app.use("/api/user", authenticateUser, userRoutes);
 
 app.get("/", (req, res) => res.send("FedEx Route Planning API Running"));
 
