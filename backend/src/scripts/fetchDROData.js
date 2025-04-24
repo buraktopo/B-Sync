@@ -14,18 +14,27 @@ async function fetchPolygonsForAllPlans(userId) {
   }
 
   const browser = await puppeteer.launch({
-    headless: false,
+    headless: true,
     executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     defaultViewport: null,
     args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-blink-features=AutomationControlled',
       '--window-size=800,600',
-      '--window-position=' + Math.floor((1920 - 800) / 2) + ',' + Math.floor((1080 - 600) / 2)
     ],
   });
 
   await connectDB();
 
   const page = await browser.newPage();
+
+  // Attempt to spoof headless detection
+  await page.evaluateOnNewDocument(() => {
+    Object.defineProperty(navigator, 'webdriver', { get: () => false });
+  });
+
   await page.goto("https://purpleid.okta.com/app/purpleid_routesmartdro_1/exk3v65bjnqglHK9W357/sso/saml", {
     waitUntil: "networkidle2"
   });
