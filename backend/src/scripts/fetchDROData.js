@@ -30,6 +30,18 @@ async function fetchPolygonsForAllPlans(userId) {
     waitUntil: "networkidle2"
   });
 
+  // Automatically fill Okta login form with updated selectors
+  await page.waitForSelector('input[name="identifier"]', { timeout: 30000 });
+  await page.type('input[name="identifier"]', '8785549', { delay: 100 });
+  
+  await page.waitForSelector('input[name="credentials.passcode"]', { timeout: 30000 });
+  await page.type('input[name="credentials.passcode"]', 'Hizmet@2025@', { delay: 100 });
+  
+  await Promise.all([
+    page.waitForNavigation({ waitUntil: 'networkidle2' }),
+    page.click('input[type="submit"], button[data-type="save"]')
+  ]);
+
   console.log("🔐 Please log in manually via the popup...");
 
   await page.waitForNavigation({ waitUntil: "networkidle2" });
